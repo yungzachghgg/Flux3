@@ -1,0 +1,37 @@
+{
+  "users": {
+    "Zack1990": {
+      "password": "a577ef515217ac0063f545ef46f871b11cbdefafe13a6aa8efabd427ff767471",
+      "created": "2026-04-12T21:06:20.920Z"
+    }
+  },
+  "keys": {
+    "ak_b7r2zTEypCbxlGtwyHLweiQ5bucOJaD6": {
+      "owner": "Zack1990",
+      "name": "1",
+      "created": "2026-04-12T21:06:32.071Z",
+      "expiry": "2026-04-13T21:06:32.071Z",
+      "active": false,
+      "lastUsed": null,
+      "hwid": null
+    },
+    "ak_C5tUImbZFQLCj3rnjRn4g4M7UcZsF0k2": {
+      "owner": "Zack1990",
+      "name": "sdfffffffffffff",
+      "created": "2026-04-12T21:15:08.821Z",
+      "expiry": "2026-05-04T21:15:08.821Z",
+      "active": false,
+      "lastUsed": "2026-04-12T21:15:24.304Z",
+      "hwid": "DESKTOP-23DDAC2"
+    },
+    "ak_scUzdgZOOW7XIZBO1ocaAx6ldfs8xlX8": {
+      "owner": "Zack1990",
+      "name": "1",
+      "created": "2026-04-12T21:31:07.153Z",
+      "expiry": "2026-04-13T21:31:07.153Z",
+      "active": true,
+      "lastUsed": "2026-04-12T21:31:18.638Z",
+      "hwid": "DESKTOP-23DDAC2"
+    }
+  }
+}

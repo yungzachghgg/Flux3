@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Key Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .container {
+      background: #1a1a1a;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 600px;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; }
+    h2 { font-size: 1.2rem; margin: 1.5rem 0 1rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #aaa; }
+    input, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #0f0f0f;
+      color: #fff;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    input:focus, textarea:focus { outline: none; border-color: #3b82f6; }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 6px;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #2563eb; }
+    button.secondary { background: #333; margin-top: 0.5rem; }
+    button.secondary:hover { background: #444; }
+    button.danger { background: #dc2626; }
+    button.danger:hover { background: #b91c1c; }
+    .error { color: #ef4444; margin-top: 0.5rem; font-size: 0.9rem; }
+    .success { color: #22c55e; margin-top: 0.5rem; font-size: 0.9rem; }
+    .hidden { display: none; }
+    .key-item {
+      background: #0f0f0f;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+      word-break: break-all;
+    }
+    .key-name { font-weight: 500; margin-bottom: 0.25rem; display: flex; justify-content: space-between; }
+    .key-value {
+      font-family: monospace;
+      background: #1a1a1a;
+      padding: 0.5rem;
+      border-radius: 4px;
+      margin: 0.5rem 0;
+      font-size: 0.85rem;
+      color: #4ade80;
+    }
+    .key-date { font-size: 0.8rem; color: #888; }
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .tab {
+      flex: 1;
+      padding: 0.5rem;
+      text-align: center;
+      background: #0f0f0f;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .tab.active { background: #3b82f6; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .logout-btn {
+      width: auto;
+      padding: 0.4rem 1rem;
+      font-size: 0.9rem;
+      background: #333;
+    }
+    .new-key-box {
+      background: #166534;
+      padding: 1rem;
+      border-radius: 6px;
+      margin: 1rem 0;
+    }
+    .new-key-box .key-value {
+      background: #0f0f0f;
+      color: #4ade80;
+      font-size: 1rem;
+    }
+    .info-box {
+      background: #1e3a5f;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    .info-box h3 { margin-bottom: 0.5rem; color: #60a5fa; }
+    .info-box code {
+      background: #0f0f0f;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .btn-row button { flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 API Key Manager</h1>
+
+    <!-- Auth Section -->
+    <div id="authSection">
+      <div class="tabs">
+        <div class="tab active" onclick="showTab('login')">Login</div>
+        <div class="tab" onclick="showTab('register')">Register</div>
+      </div>
+
+      <div id="loginTab" class="section active">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="loginUsername" placeholder="Enter username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter password">
+        </div>
+        <button onclick="login()">Login</button>
+        <div id="loginError" class="error"></div>
+      </div>
+
+      <div id="registerTab" class="section">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="regUsername" placeholder="Choose username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="regPassword" placeholder="Choose password (min 6 chars)">
+        </div>
+        <button onclick="register()">Create Account</button>
+        <div id="regError" class="error"></div>
+        <div id="regSuccess" class="success"></div>
+      </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="hidden">
+      <div class="header">
+        <span>Welcome, <strong id="welcomeUser"></strong>!</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+
+      <div class="info-box">
+        <h3>📡 API Endpoint</h3>
+        <p><strong>URL:</strong> <code id="apiUrl">Loading...</code></p>
+        <p style="margin-top: 0.5rem;"><strong>Auth Header:</strong> <code>X-API-Key: your-key-here</code></p>
+      </div>
+
+      <h2>Generate New API Key</h2>
+      <div class="form-group">
+        <label>Key Name (optional)</label>
+        <input type="text" id="keyName" placeholder="e.g., My C++ App">
+      </div>
+      <button onclick="generateKey()">Generate API Key</button>
+      <div id="newKeyDisplay" class="new-key-box hidden">
+        <strong>Your new API key (save this - it won't be shown again):</strong>
+        <div class="key-value" id="newKeyValue"></div>
+        <button class="secondary" onclick="copyKey()">Copy to Clipboard</button>
+      </div>
+      <div id="genError" class="error"></div>
+
+      <h2>Your API Keys</h2>
+      <div id="keysList"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== CONFIG ====================
+    // Free backend using jsonbin.io (no signup required for basic use)
+    // For production, replace with your own backend or Firebase
+    const API_BASE = 'https://api.jsonbin.io/v3/b';
+    const MASTER_KEY = '$2a$10$YourJsonBinMasterKeyHere'; // Get from jsonbin.io
+    // ================================================
+
+    let currentUser = null;
+    let userData = null;
+
+    // Initialize
+    const saved = localStorage.getItem('apiAuthUser');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        currentUser = parsed.username;
+        userData = parsed;
+        showDashboard();
+      } catch (e) {
+        localStorage.removeItem('apiAuthUser');
+      }
+    }
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+
+      if (tab === 'login') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('loginTab').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('registerTab').classList.add('active');
+      }
+    }
+
+    // Simple hash function for passwords
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function generateApiKey() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let key = 'ak_';
+      for (let i = 0; i < 32; i++) {
+        key += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return key;
+    }
+
+    async function getUsersBin() {
+      try {
+        const response = await fetch(`${API_BASE}/67f73c1e8a456b79668ac36e`, {
+          headers: { 'X-Master-Key': MASTER_KEY }
+        });
+        if (!response.ok) throw new Error('Failed to fetch');
+        const data = await response.json();
+        return data.record || { users: {} };
+      } catch (e) {
+        return { users: {} };
+      }
+    }
+
+    async function saveUsersBin(data) {
+      await fetch(`${API_BASE}/67f73c1e8a456b79668ac36e`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': MASTER_KEY
+        },
+        body: JSON.stringify(data)
+      });
+    }
+
+    async function register() {
+      const username = document.getElementById('regUsername').value.trim().toLowerCase();
+      const password = document.getElementById('regPassword').value;
+
+      document.getElementById('regError').textContent = '';
+      document.getElementById('regSuccess').textContent = '';
+
+      if (!username || !password) {
+        document.getElementById('regError').textContent = 'Username and password required';
+        return;
+      }
+      if (password.length < 6) {
+        document.getElementById('regError').textContent = 'Password must be at least 6 characters';
+        return;
+      }
+
+      try {
+        const db = await getUsersBin();
+
+        if (db.users[username]) {
+          document.getElementById('regError').textContent = 'Username already exists';
+          return;
+        }
+
+        const hashedPassword = await hashPassword(password);
+        db.users[username] = {
+          password: hashedPassword,
+          keys: [],
+          created: new Date().toISOString()
+        };
+
+        await saveUsersBin(db);
+
+        document.getElementById('regSuccess').textContent = 'Account created! Please login.';
+        document.getElementById('regUsername').value = '';
+        document.getElementById('regPassword').value = '';
+        setTimeout(() => showTab('login'), 1000);
+      } catch (err) {
+        document.getElementById('regError').textContent = 'Error: ' + err.message;
+      }
+    }
+
+    async function login() {
+      const username = document.getElementById('loginUsername').value.trim().toLowerCase();
+      const password = document.getElementById('loginPassword').value;
+
+      document.getElementById('loginError').textContent = '';
+
+      if (!username || !password) {
+        document.getElementById('loginError').textContent = 'Username and password required';
+        return;
+      }
+
+      try {
+        const db = await getUsersBin();
+        const user = db.users[username];
+
+        if (!user) {
+          document.getElementById('loginError').textContent = 'Invalid credentials';
+          return;
+        }
+
+        const hashedPassword = await hashPassword(password);
+        if (user.password !== hashedPassword) {
+          document.getElementById('loginError').textContent = 'Invalid credentials';
+          return;
+        }
+
+        currentUser = username;
+        userData = { username, keys: user.keys || [] };
+        localStorage.setItem('apiAuthUser', JSON.stringify(userData));
+        showDashboard();
+      } catch (err) {
+        document.getElementById('loginError').textContent = 'Error: ' + err.message;
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('dashboardSection').classList.remove('hidden');
+      document.getElementById('welcomeUser').textContent = currentUser;
+      document.getElementById('apiUrl').textContent = window.location.origin + '/auth.html';
+      loadKeys();
+    }
+
+    function logout() {
+      localStorage.removeItem('apiAuthUser');
+      currentUser = null;
+      userData = null;
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('dashboardSection').classList.add('hidden');
+      document.getElementById('loginUsername').value = '';
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('newKeyDisplay').classList.add('hidden');
+    }
+
+    async function generateKey() {
+      const name = document.getElementById('keyName').value.trim();
+      document.getElementById('genError').textContent = '';
+
+      try {
+        const db = await getUsersBin();
+        const user = db.users[currentUser];
+
+        if (!user) {
+          document.getElementById('genError').textContent = 'User not found';
+          return;
+        }
+
+        const newKey = generateApiKey();
+        user.keys = user.keys || [];
+        user.keys.push({
+          key: newKey,
+          name: name || 'Unnamed Key',
+          created: new Date().toISOString(),
+          active: true
+        });
+
+        await saveUsersBin(db);
+
+        document.getElementById('newKeyValue').textContent = newKey;
+        document.getElementById('newKeyDisplay').classList.remove('hidden');
+        document.getElementById('keyName').value = '';
+        loadKeys();
+      } catch (err) {
+        document.getElementById('genError').textContent = 'Error: ' + err.message;
+      }
+    }
+
+    function copyKey() {
+      const key = document.getElementById('newKeyValue').textContent;
+      navigator.clipboard.writeText(key).then(() => {
+        alert('Key copied to clipboard!');
+      });
+    }
+
+    async function loadKeys() {
+      try {
+        const db = await getUsersBin();
+        const user = db.users[currentUser];
+        const list = document.getElementById('keysList');
+
+        if (!user || !user.keys || user.keys.length === 0) {
+          list.innerHTML = '<p style="color: #888; text-align: center;">No API keys yet. Generate one above!</p>';
+          return;
+        }
+
+        // Sort by date (newest first)
+        const sortedKeys = [...user.keys].sort((a, b) => new Date(b.created) - new Date(a.created));
+
+        list.innerHTML = sortedKeys.map((key, index) => `
+          <div class="key-item">
+            <div class="key-name">
+              <span>${key.name}</span>
+              <span style="color: ${key.active ? '#4ade80' : '#f87171'}">${key.active ? 'Active' : 'Inactive'}</span>
+            </div>
+            <div class="key-value">${key.key}</div>
+            <div class="key-date">Created: ${new Date(key.created).toLocaleString()}</div>
+            ${key.active ? `
+              <div class="btn-row" style="margin-top: 0.5rem;">
+                <button class="secondary" onclick="copyExistingKey('${key.key}')">Copy</button>
+                <button class="danger" onclick="revokeKey(${index})">Revoke</button>
+              </div>
+            ` : '<div style="color: #666; margin-top: 0.5rem;">Revoked</div>'}
+          </div>
+        `).join('');
+      } catch (err) {
+        document.getElementById('keysList').innerHTML = '<p style="color: #ef4444; text-align: center;">Error loading keys</p>';
+      }
+    }
+
+    function copyExistingKey(key) {
+      navigator.clipboard.writeText(key).then(() => {
+        alert('Key copied to clipboard!');
+      });
+    }
+
+    async function revokeKey(index) {
+      if (!confirm('Are you sure you want to revoke this API key?')) return;
+
+      try {
+        const db = await getUsersBin();
+        const user = db.users[currentUser];
+
+        if (user.keys[index]) {
+          user.keys[index].active = false;
+          await saveUsersBin(db);
+          loadKeys();
+        }
+      } catch (err) {
+        alert('Failed to revoke key: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
