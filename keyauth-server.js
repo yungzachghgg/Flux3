@@ -177,7 +177,20 @@ app.post('/api/auth/validate', (req, res) => {
     });
   }
   
-  const keyData = db.keys[key];
+  // First try to find by full key
+  let keyData = db.keys[key];
+  let actualKey = key;
+  
+  // If not found, try to find by name
+  if (!keyData) {
+    for (const [fullKey, data] of Object.entries(db.keys)) {
+      if (data.name === key && data.active) {
+        keyData = data;
+        actualKey = fullKey;
+        break;
+      }
+    }
+  }
   
   // Key doesn't exist
   if (!keyData) {
@@ -206,22 +219,25 @@ app.post('/api/auth/validate', (req, res) => {
     });
   }
   
-  // HWID lock (optional - prevents key sharing)
+  // HWID lock (disk-based locking - prevents key sharing)
   if (hwid) {
     if (keyData.hwid && keyData.hwid !== hwid) {
       return res.json({ 
         success: false, 
-        message: 'HWID mismatch - key locked to different device',
-        subscription: 'Expired'
+        message: `HWID mismatch - key locked to different disk (${keyData.hwid})`,
+        subscription: 'Expired',
+        currentHwid: hwid
       });
     }
     if (!keyData.hwid) {
-      keyData.hwid = hwid; // Lock to first device
+      keyData.hwid = hwid; // Lock to first disk
+      console.log(`Key ${actualKey} locked to HWID: ${hwid}`);
     }
   }
   
   // Update last used
   keyData.lastUsed = new Date().toISOString();
+  db.keys[actualKey] = keyData; // Ensure we update the correct key
   saveDB();
   
   res.json({
