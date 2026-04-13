@@ -3,13 +3,52 @@
 
 #include <iostream>
 #include <string>
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
 #include <curl/curl.h>
 #include <json/json.h> // Install: apt-get install libjsoncpp-dev (or vcpkg install jsoncpp)
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 // Callback for libcurl to write response data
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     userp->append((char*)contents, size * nmemb);
     return size * nmemb;
+}
+
+// Generate disk-based HWID
+std::string generateDiskHWID() {
+#ifdef _WIN32
+    // Windows: Get volume serial number
+    DWORD serial = 0;
+    GetVolumeInformationA("C:\\", NULL, 0, &serial, NULL, NULL, NULL, 0);
+    std::string hwid = "disk_" + std::to_string(serial);
+    
+    // Add additional identifiers
+    char computerName[256] = {0};
+    DWORD size = sizeof(computerName);
+    if (GetComputerNameA(computerName, &size)) {
+        hwid += "_" + std::string(computerName);
+    }
+    
+    return hwid;
+#else
+    // Linux/Mac: Use disk UUID or similar
+    std::string hwid = "disk_unknown";
+    FILE* pipe = popen("lsblk -o UUID -n | head -1", "r");
+    if (pipe) {
+        char buffer[128];
+        if (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+            hwid = "disk_" + std::string(buffer);
+            hwid.erase(std::remove(hwid.begin(), hwid.end(), '\n'), hwid.end());
+        }
+        pclose(pipe);
+    }
+    return hwid;
+#endif
 }
 
 // Parse simple JSON (without external lib, you can use this simple parser)
@@ -51,8 +90,8 @@ private:
     
 public:
     KeyAuthAPI(const std::string& url) : apiUrl(url), authenticated(false) {
-        // Generate simple HWID (in production, use machine-specific info)
-        hwid = "hwid_" + std::to_string(time(nullptr));
+        // Generate disk-based HWID
+        hwid = generateDiskHWID();
     }
     
     bool validateKey(const std::string& key) {
