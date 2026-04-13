@@ -996,6 +996,10 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Users
         </div>
+        <div class="sidebar-item hidden" id="keysAdminTab" onclick="showDashboardTab('keysAdmin')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          All Keys
+        </div>
         <div class="sidebar-item" onclick="logout()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Logout
@@ -1188,6 +1192,41 @@ int main() {
         </div>
       </div>
 
+      <!-- Keys Admin Tab -->
+      <div id="keysAdminTab" class="content-section">
+        <div class="section-header">
+          <h2>All Keys Management</h2>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <input type="text" id="keySearch" placeholder="Search keys..." style="width: 200px; background: #1a1a1a; border: 1px solid #333; padding: 0.5rem 0.75rem; border-radius: 8px; color: #fff;">
+            <select id="keyFilter" style="background: #1a1a1a; border: 1px solid #333; padding: 0.5rem; border-radius: 8px; color: #fff;">
+              <option value="all">All Keys</option>
+              <option value="active">Active</option>
+              <option value="banned">Banned/Revoked</option>
+            </select>
+            <button class="btn-secondary" onclick="loadAllKeys()">Refresh</button>
+          </div>
+        </div>
+        
+        <div class="admin-stats" id="keysAdminStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="stat-card" style="background: #0f0f0f; padding: 1rem; border-radius: 8px; border: 1px solid #2a2a2a;">
+            <div class="stat-number" id="totalKeysAdmin">0</div>
+            <div class="stat-text">Total Keys</div>
+          </div>
+          <div class="stat-card" style="background: #0f0f0f; padding: 1rem; border-radius: 8px; border: 1px solid #2a2a2a;">
+            <div class="stat-number" id="activeKeysAdmin2">0</div>
+            <div class="stat-text">Active</div>
+          </div>
+          <div class="stat-card" style="background: #0f0f0f; padding: 1rem; border-radius: 8px; border: 1px solid #2a2a2a;">
+            <div class="stat-number" id="revokedKeysAdmin">0</div>
+            <div class="stat-text">Revoked</div>
+          </div>
+        </div>
+
+        <div id="allKeysList" class="users-table-container">
+          <div class="empty-state">Loading keys...</div>
+        </div>
+      </div>
+
       <!-- Ban User Modal -->
       <div id="banUserModal" class="modal hidden">
         <div class="modal-content">
@@ -1308,6 +1347,10 @@ int main() {
         document.getElementById('pageTitle').textContent = 'User Management';
         loadUsers();
         loadAdminStats();
+      } else if (tab === 'keysAdmin') {
+        document.getElementById('keysAdminTab').classList.add('active');
+        document.getElementById('pageTitle').textContent = 'All Keys Management';
+        loadAllKeys();
       }
     }
 
@@ -1396,9 +1439,10 @@ int main() {
       document.getElementById('welcomeUser').textContent = currentUser;
       document.getElementById('apiEndpoint').textContent = `${API_BASE}/api/data`;
       
-      // Show Users tab for admin/owner
+      // Show admin tabs for owner/admin
       if (currentUser === 'owner' || currentUser === 'admin') {
         document.getElementById('usersTab').classList.remove('hidden');
+        document.getElementById('keysAdminTab').classList.remove('hidden');
       }
       
       loadKeys();
@@ -1840,9 +1884,130 @@ bool validateKey(const std::string& userKey) {
       }
     }
 
+    // Admin: Load all keys
+    async function loadAllKeys() {
+      const search = document.getElementById('keySearch').value;
+      const filter = document.getElementById('keyFilter').value;
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/keys?search=${encodeURIComponent(search)}&filter=${filter}&_t=${Date.now()}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (!data.success) {
+          document.getElementById('allKeysList').innerHTML = '<div class="empty-state">Failed to load keys</div>';
+          return;
+        }
+        
+        // Update stats
+        document.getElementById('totalKeysAdmin').textContent = data.keys.length;
+        document.getElementById('activeKeysAdmin2').textContent = data.keys.filter(k => k.active).length;
+        document.getElementById('revokedKeysAdmin').textContent = data.keys.filter(k => !k.active).length;
+        
+        if (data.keys.length === 0) {
+          document.getElementById('allKeysList').innerHTML = '<div class="empty-state">No keys found</div>';
+          return;
+        }
+        
+        document.getElementById('allKeysList').innerHTML = `
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>User</th>
+                <th>Status</th>
+                <th>Uses</th>
+                <th>IP Lock</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.keys.map(k => `
+                <tr>
+                  <td><code style="font-family: monospace; color: #00d4ff;">${k.fullKey}</code></td>
+                  <td>${k.username}</td>
+                  <td>
+                    ${k.active 
+                      ? '<span class="user-badge badge-active">Active</span>' 
+                      : '<span class="user-badge badge-banned">Revoked</span>'
+                    }
+                  </td>
+                  <td>${k.useCount || 0}</td>
+                  <td>${k.lockedIp || 'None'}</td>
+                  <td>${new Date(k.created).toLocaleDateString()}</td>
+                  <td>
+                    ${k.active 
+                      ? `<button class="btn-table btn-ban" onclick="banKey('${k.fullKey}')">Revoke</button>`
+                      : `<button class="btn-table btn-unban" onclick="unbanKey('${k.fullKey}')">Restore</button>`
+                    }
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        document.getElementById('allKeysList').innerHTML = '<div class="empty-state">Error loading keys</div>';
+      }
+    }
+
+    // Admin: Ban/Revoke a key
+    async function banKey(key) {
+      if (!confirm(`Are you sure you want to revoke key: ${key}?`)) return;
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/keys/${encodeURIComponent(key)}/ban?_t=${Date.now()}`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          loadAllKeys();
+        } else {
+          alert('Failed to revoke key: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Network error while revoking key');
+      }
+    }
+
+    // Admin: Unban/Restore a key
+    async function unbanKey(key) {
+      if (!confirm(`Are you sure you want to restore key: ${key}?`)) return;
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/keys/${encodeURIComponent(key)}/unban?_t=${Date.now()}`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          loadAllKeys();
+        } else {
+          alert('Failed to restore key: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Network error while restoring key');
+      }
+    }
+
     // Search and filter listeners
     document.getElementById('userSearch')?.addEventListener('input', debounce(loadUsers, 300));
     document.getElementById('userFilter')?.addEventListener('change', loadUsers);
+    document.getElementById('keySearch')?.addEventListener('input', debounce(loadAllKeys, 300));
+    document.getElementById('keyFilter')?.addEventListener('change', loadAllKeys);
 
     function debounce(func, wait) {
       let timeout;
